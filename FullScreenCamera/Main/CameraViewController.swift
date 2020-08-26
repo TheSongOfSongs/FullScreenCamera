@@ -12,6 +12,14 @@ class CameraViewController: UIViewController {
     let videoDataOutput = AVCaptureVideoDataOutput()
     var recordOutput = AVCaptureMovieFileOutput()
     
+    private lazy var filterView: UIView = {
+        let monitorViewSize = self.monitorView.frame.size
+        let frame = CGRect(x: 0, y: monitorViewSize.height, width: monitorViewSize.width, height: self.view.frame.size.height - monitorViewSize.height)
+        
+        let filterView = FilterCollection(frame: frame)
+        return filterView
+    }()
+    
     let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes:
         [.builtInDualCamera, .builtInWideAngleCamera, .builtInTrueDepthCamera], mediaType: .video, position: .unspecified)
     
@@ -55,7 +63,6 @@ class CameraViewController: UIViewController {
     @IBOutlet weak var recentPhoto: UIButton!
     @IBOutlet weak var cameraToggle: UIButton!
     @IBOutlet weak var monitorView: UIImageView!
-    @IBOutlet weak var containerView: UIView!
     
     override var prefersStatusBarHidden: Bool {
         return true
@@ -66,8 +73,6 @@ class CameraViewController: UIViewController {
         
         self.cameraManager.setupSession()
         self.cameraManager.startSession()
-        
-        self.containerView.isHidden = true
         
         setupUI()
     }
@@ -121,12 +126,11 @@ class CameraViewController: UIViewController {
     
     // MARK: - show filter
     @IBAction func showFilter(_ sender: UIButton) {
-        let filterView = FilterCollection(frame: self.containerView.frame)
         self.view.addSubview(filterView)
     }
     
     @IBAction func hideFilter(_ sender: UITapGestureRecognizer) {
-        self.containerView.isHidden = true
+        filterView.removeFromSuperview()
     }
     
     
