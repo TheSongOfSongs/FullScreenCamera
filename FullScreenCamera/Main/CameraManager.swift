@@ -44,35 +44,40 @@ class CameraManager: NSObject {
     
     var isWriting: Bool = false
     
-    var startTime: CMTime?
+    var startTime: CMTime? {
+        didSet {
+            isWriting = startTime == nil ? false : true
+        }
+    }
     
     private var _outputUrl: URL?
-    
+
     var outputUrl: URL {
         get {
             if let url = _outputUrl {
                 return url
             }
-            
+
             _outputUrl = outputDirectory.appendingPathComponent("test.mp4")
-            
+
             return _outputUrl!
         }
     }
-    
+
     private var _outputDirectory: URL?
-    
+
     var outputDirectory: URL {
         get {
             if let url = _outputDirectory {
                 return url
             }
-            
+
             _outputDirectory = getDocumentsDirectory().appendingPathComponent("recording")
-            
+
             return _outputDirectory!
         }
     }
+    
     
     var videoSize = CGSize(width: 640 , height: 480) // 이후 사이즈 확인할 것!!!!!!!!!!!
     
@@ -179,7 +184,6 @@ class CameraManager: NSObject {
     
     // MARK: - record video
     func configureAssetWrtier() {
-        print("[1] configure AssetWriter")
         prepareVideoFile()
         
         do {
@@ -198,42 +202,36 @@ class CameraManager: NSObject {
             assetVideoWriter = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: videoSettings)
             assetVideoWriter?.expectsMediaDataInRealTime = true
             
-            guard let assetVideoWriter = assetVideoWriter else {
-                print("Video or Input not configured")
-                return
-            }
+            guard let assetVideoWriter = assetVideoWriter else { return }
             
             let adaptorSettings: [String: Any] = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32RGBA]
-//                                                  String(kCVPixelFormatOpenGLESCompatibility): kCFBooleanTrue]
             
             assetAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: assetVideoWriter, sourcePixelBufferAttributes: adaptorSettings)
+
+            guard assetAdaptor != nil else { return }
             
             assetWriter?.add(assetVideoWriter)
-            
-            guard assetAdaptor != nil else {
-                print("AssetAdaptor not created")
-                return
-            }
             
         } catch {
             print("Unable to remove file at URL \(outputUrl)")
         }
     }
     
+    // MARK: TODO - refactoring
+    // captureOutput의 속도가 매우 빨라서 startWriting이 되기 이전에
+    // startSession이 호출됨 (디버깅에선 에러X, 실행하면 에러)
     func controlRecording() {
         if isWriting {
             isWriting.toggle()
             stopRecording()
         } else {
             isWriting.toggle()
-            startRecording()
         }
-        
+
         captureButtonCompletion(isWriting)
     }
     
     func startRecording() {
-        print("[2] start writing")
         assetWriter?.startWriting()
     }
     
@@ -242,7 +240,6 @@ class CameraManager: NSObject {
         
         sessionQueue.async {
             self.assetWriter?.finishWriting {
-                print("Asset writer did finish writing")
                 self.startTime = nil
                 
                 PHPhotoLibrary.requestAuthorization { status in
@@ -262,6 +259,9 @@ class CameraManager: NSObject {
     }
     
     func prepareVideoFile() {
+        
+
+        
         if FileManager.default.fileExists(atPath: outputUrl.path) {
             do {
                 try FileManager.default.removeItem(at: outputUrl)
@@ -319,7 +319,6 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         if !isCamera {
             guard isWriting else { return }
             let timeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-            print(timeStamp)
             recordBuffer(pixelBuffer: imageBuffer, timeStamp: timeStamp)
         }
     }
@@ -334,14 +333,12 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     
     func recordBuffer(pixelBuffer: CVPixelBuffer, timeStamp: CMTime) {
         if startTime == nil {
+            startRecording()
+            
             startTime = timeStamp
-            print("[3] start session")
             assetWriter?.startSession(atSourceTime: timeStamp)
         }
         
         assetAdaptor?.append(pixelBuffer, withPresentationTime: timeStamp)
-        print("[4] append")
     }
-    
-    
 }

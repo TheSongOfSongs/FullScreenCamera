@@ -94,24 +94,6 @@ class CameraViewController: UIViewController {
         blurBGView.layer.masksToBounds = true
         
         cameraManager.completion = { image in
-            /*  Error occured */
-            //            var image: UIImage = self.convert(ciImage: image)
-            //
-            //            if let filterName = self.filterManager.currentFilter, let filter = CIFilter(name: filterName) {
-            //                filter.setValue(image, forKey: kCIInputImageKey)
-            //                if let ciImage = filter.outputImage {
-            //                    let uiImage: UIImage = UIImage(ciImage: ciImage)
-            //                    var cgImage: CGImage? = uiImage.cgImage
-            //
-            //                    if cgImage == nil, let contextImage = self.context.createCGImage(ciImage, from: ciImage.extent) {
-            //                        cgImage = contextImage
-            //                    }
-            //
-            //                    if let cgImage = cgImage {
-            //                        let resultImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
-            //                        image = resultImage
-            //                    }
-            //                }
             DispatchQueue.main.async {
                 self.monitorView.image = image
             }
