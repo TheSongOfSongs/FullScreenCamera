@@ -40,7 +40,7 @@ class PhotoViewController: UIViewController {
                 }
                 
                 if let cgImage = cgImage {
-                    let resultImage = UIImage(cgImage: cgImage, scale: selectedImage.scale, orientation: selectedImage.imageOrientation)
+                    let resultImage = UIImage(cgImage: cgImage)
                     self.imageView.image = resultImage
                 }
             }

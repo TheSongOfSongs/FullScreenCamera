@@ -32,6 +32,7 @@ class CameraViewController: UIViewController {
                 captureButton.backgroundColor = .white
             } else {
                 captureButton.backgroundColor = .red
+                cameraManager.setVideoSize(size: self.view.frame.size)
                 cameraManager.configureAssetWrtier()
             }
         }
@@ -110,7 +111,7 @@ class CameraViewController: UIViewController {
     {
         let context:CIContext = CIContext.init(options: nil)
         guard let cgImage:CGImage = context.createCGImage(ciImage, from: ciImage.extent) else { return UIImage() }
-        let image:UIImage = UIImage(cgImage: cgImage, scale: .init(), orientation: .right)
+        let image: UIImage = UIImage(cgImage: cgImage)
         
         return image
     }

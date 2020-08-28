@@ -79,7 +79,8 @@ class CameraManager: NSObject {
     }
     
     
-    var videoSize = CGSize(width: 640 , height: 480) // 이후 사이즈 확인할 것!!!!!!!!!!!
+//    var videoSize = CGSize(width: 1080, height: 720) // 이후 사이즈 확인할 것!!!!!!!!!!!
+    var videoSize: CGSize?
     
     func toggleCameraRecorderStatus() {
         isCamera.toggle()
@@ -116,9 +117,7 @@ class CameraManager: NSObject {
             if self.captureSession.canAddOutput(self.photoOutput) {
                 self.photoOutput.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey:AVVideoCodecType.jpeg])], completionHandler: nil)
                 self.captureSession.addOutput(self.photoOutput)
-                
                 self.videoDataOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
-                self.videoDataOutput.connection(with: .video)?.videoOrientation = .portrait
                 self.captureSession.addOutput(self.videoDataOutput)
             }
             
@@ -189,29 +188,24 @@ class CameraManager: NSObject {
         do {
             assetWriter = try AVAssetWriter(url: outputUrl, fileType: AVFileType.mp4)
             
-            guard assetWriter != nil else {
-                print("Asset writer not created")
-                return
-            }
+            guard assetWriter != nil else { return }
+            let videoSize: CGSize = self.videoSize ?? CGSize(width: 1280, height: 720)
             
             let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264,
                                                 AVVideoWidthKey: videoSize.width,
                                                 AVVideoHeightKey: videoSize.height,
-                                                AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: videoSize.width * videoSize.height]]
+                                                AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 44100]
+            ]
             
             assetVideoWriter = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: videoSettings)
             assetVideoWriter?.expectsMediaDataInRealTime = true
             
             guard let assetVideoWriter = assetVideoWriter else { return }
-            
-            let adaptorSettings: [String: Any] = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32RGBA]
-            
-            assetAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: assetVideoWriter, sourcePixelBufferAttributes: adaptorSettings)
-
-            guard assetAdaptor != nil else { return }
-            
             assetWriter?.add(assetVideoWriter)
             
+            let adaptorSettings: [String: Any] = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32RGBA]
+            assetAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: assetVideoWriter, sourcePixelBufferAttributes: adaptorSettings)
+
         } catch {
             print("Unable to remove file at URL \(outputUrl)")
         }
@@ -241,27 +235,29 @@ class CameraManager: NSObject {
         sessionQueue.async {
             self.assetWriter?.finishWriting {
                 self.startTime = nil
-                
-                PHPhotoLibrary.requestAuthorization { status in
-                    if status == .authorized {
-                        PHPhotoLibrary.shared().performChanges({
-                            guard let video = self.assetWriter?.outputURL else { return }
-                            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: video)
-                        }, completionHandler: { (success, error) in
-                            if error != nil {
-                                print(error?.localizedDescription ?? "")
-                            }
-                        })
-                    }
+                self.saveVideo()
+            }
+        }
+    }
+    
+    func saveVideo() {
+        sessionQueue.async {
+            PHPhotoLibrary.requestAuthorization { status in
+                if status == .authorized {
+                    PHPhotoLibrary.shared().performChanges({
+                        guard let video = self.assetWriter?.outputURL else { return }
+                        PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: video)
+                    }, completionHandler: { (success, error) in
+                        if error != nil {
+                            print(error?.localizedDescription ?? "")
+                        }
+                    })
                 }
             }
         }
     }
     
     func prepareVideoFile() {
-        
-
-        
         if FileManager.default.fileExists(atPath: outputUrl.path) {
             do {
                 try FileManager.default.removeItem(at: outputUrl)
@@ -279,6 +275,10 @@ class CameraManager: NSObject {
         }
     }
     
+    func setVideoSize(size: CGSize) {
+        videoSize = size
+    }
+    
     private func getDocumentsDirectory() -> URL {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         let documentsDirectory = paths[0]
@@ -290,6 +290,8 @@ class CameraManager: NSObject {
 
 extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        
+        connection.videoOrientation = .portrait // 기본 orientation; [back: 90], [front: -90]
         
         guard let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
@@ -308,7 +310,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
                 }
                 
                 if let cgImage = cgImage {
-                    let resultImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+                    let resultImage = UIImage(cgImage: cgImage)
                     image = resultImage
                 }
             }
@@ -326,7 +328,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     func convert(ciImage:CIImage) -> UIImage {
         let context:CIContext = CIContext.init(options: nil)
         guard let cgImage:CGImage = context.createCGImage(ciImage, from: ciImage.extent) else { return UIImage() }
-        let image:UIImage = UIImage(cgImage: cgImage, scale: .init(), orientation: .right)
+        let image: UIImage = UIImage(cgImage: cgImage)
         
         return image
     }
