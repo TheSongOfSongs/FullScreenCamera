@@ -6,10 +6,13 @@ import CoreImage
 class CameraViewController: UIViewController {
     
     let cameraManager = CameraManager()
+    
     let filterManager = FilterManager.shared
     
     var videoDeviceInput: AVCaptureDeviceInput!
+    
     let videoDataOutput = AVCaptureVideoDataOutput()
+    
     var recordOutput = AVCaptureMovieFileOutput()
     
     private lazy var filterView: UIView = {
@@ -29,6 +32,7 @@ class CameraViewController: UIViewController {
                 captureButton.backgroundColor = .white
             } else {
                 captureButton.backgroundColor = .red
+                cameraManager.configureAssetWrtier()
             }
         }
     }
@@ -112,6 +116,12 @@ class CameraViewController: UIViewController {
                 self.monitorView.image = image
             }
         }
+        
+        cameraManager.captureButtonCompletion = { isRecording in
+            DispatchQueue.main.async {
+                self.captureButton.backgroundColor = isRecording ? .orange : .red
+            }
+        }
     }
     
     func convert(ciImage:CIImage) -> UIImage
@@ -169,13 +179,19 @@ class CameraViewController: UIViewController {
     // MARK: - switch input between photo and video
     @IBAction func swtichCameraRecord(_ sender: UIButton) {
         cameraRecorderStatus.toggle()
+        cameraManager.toggleCameraRecorderStatus()
     }
     
     
     
     // MARK: - capture video or record video
     @IBAction func capture(_ sender: UIButton) {
-        capturePhoto()
+        
+        if cameraRecorderStatus.isCamera {
+            capturePhoto()
+        } else {
+            cameraManager.controlRecording()
+        }
     }
     
     func capturePhoto() {

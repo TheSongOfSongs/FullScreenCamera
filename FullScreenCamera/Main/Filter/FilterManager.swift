@@ -23,6 +23,9 @@ class FilterManager {
     ]
     
     var currentFilter: String?
+    
+    
+    
 }
 
 struct Filter {
