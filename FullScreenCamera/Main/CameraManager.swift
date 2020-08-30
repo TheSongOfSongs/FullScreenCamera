@@ -50,34 +50,9 @@ class CameraManager: NSObject {
         }
     }
     
-    private var _outputUrl: URL?
+    var outputUrl: URL?
 
-    var outputUrl: URL {
-        get {
-            if let url = _outputUrl {
-                return url
-            }
-
-            _outputUrl = outputDirectory.appendingPathComponent("test.mp4")
-
-            return _outputUrl!
-        }
-    }
-
-    private var _outputDirectory: URL?
-
-    var outputDirectory: URL {
-        get {
-            if let url = _outputDirectory {
-                return url
-            }
-
-            _outputDirectory = getDocumentsDirectory().appendingPathComponent("recording")
-
-            return _outputDirectory!
-        }
-    }
-    
+    var outputDirectory: URL?
     
 //    var videoSize = CGSize(width: 1080, height: 720) // 이후 사이즈 확인할 것!!!!!!!!!!!
     var videoSize: CGSize?
@@ -186,7 +161,7 @@ class CameraManager: NSObject {
         prepareVideoFile()
         
         do {
-            assetWriter = try AVAssetWriter(url: outputUrl, fileType: AVFileType.mp4)
+            assetWriter = try AVAssetWriter(url: outputUrl.getUrl(), fileType: AVFileType.mp4)
             
             guard assetWriter != nil else { return }
             let videoSize: CGSize = self.videoSize ?? CGSize(width: 1280, height: 720)
@@ -207,7 +182,7 @@ class CameraManager: NSObject {
             assetAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: assetVideoWriter, sourcePixelBufferAttributes: adaptorSettings)
 
         } catch {
-            print("Unable to remove file at URL \(outputUrl)")
+            print("Unable to remove file at URL \(String(describing: outputUrl))")
         }
     }
     
@@ -258,11 +233,14 @@ class CameraManager: NSObject {
     }
     
     func prepareVideoFile() {
-        if FileManager.default.fileExists(atPath: outputUrl.path) {
+        let ouputUrl = self.outputUrl.getUrl()
+        let outputDirectory = self.outputDirectory.getDirectory()
+        
+        if FileManager.default.fileExists(atPath: ouputUrl.path) {
             do {
-                try FileManager.default.removeItem(at: outputUrl)
+                try FileManager.default.removeItem(at: ouputUrl)
             } catch {
-                print("Unable to remove file at URL \(outputUrl)")
+                print("Unable to remove file at URL \(ouputUrl)")
             }
         }
         
@@ -277,13 +255,6 @@ class CameraManager: NSObject {
     
     func setVideoSize(size: CGSize) {
         videoSize = size
-    }
-    
-    private func getDocumentsDirectory() -> URL {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        let documentsDirectory = paths[0]
-        
-        return documentsDirectory
     }
 }
 
@@ -342,5 +313,22 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
         
         assetAdaptor?.append(pixelBuffer, withPresentationTime: timeStamp)
+    }
+}
+
+extension Optional where Wrapped == URL {
+    func getUrl() -> URL {
+        return self ?? getDirectory().appendingPathComponent("test.mp4")
+    }
+    
+    func getDirectory() -> URL {
+        return self ?? getDocumentsDirectory().appendingPathComponent("recording")
+    }
+    
+    func getDocumentsDirectory() -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentsDirectory = paths[0]
+        
+        return documentsDirectory
     }
 }
