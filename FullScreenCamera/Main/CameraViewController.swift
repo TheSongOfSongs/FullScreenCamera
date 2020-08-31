@@ -32,7 +32,6 @@ class CameraViewController: UIViewController {
                 captureButton.backgroundColor = .white
             } else {
                 captureButton.backgroundColor = .red
-                cameraManager.setVideoSize(size: self.view.frame.size)
                 cameraManager.configureAssetWrtier()
             }
         }
