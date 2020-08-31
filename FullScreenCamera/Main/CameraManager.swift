@@ -13,6 +13,20 @@ import Photos
 
 class CameraManager: NSObject {
     
+    /****/
+    
+    let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInDualCamera, .builtInWideAngleCamera,
+                                                                                     .builtInTrueDepthCamera],
+                                                                       mediaType: .video,
+                                                                       position: .unspecified)
+    
+    let captureSession = AVCaptureSession()
+    
+    let sessionQueue = DispatchQueue(label: "session Queue")
+    
+    let audioQueue = DispatchQueue(label: "audio Queue")
+    
+    
     var assetWriter: AVAssetWriter?
     
     var assetVideoWriter: AVAssetWriterInput?
@@ -29,24 +43,14 @@ class CameraManager: NSObject {
     
     var audioOutput = AVCaptureAudioDataOutput()
     
-    let captureSession = AVCaptureSession()
-    
-    let sessionQueue = DispatchQueue(label: "session Queue")
-    
-    let audioQueue = DispatchQueue(label: "audio Queue")
-    
-    let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInDualCamera, .builtInWideAngleCamera,
-                                                                                     .builtInTrueDepthCamera],
-                                                                       mediaType: .video,
-                                                                       position: .unspecified)
     
     var completion: (UIImage) -> Void = { image in return }
     
     var captureButtonCompletion: (Bool) -> Void = { isRecording in return }
     
-    var context = CIContext(options: nil)
-    
     let filterManager = FilterManager.shared
+    
+    var context = CIContext(options: nil)
     
     var isCamera: Bool = true
     
@@ -232,17 +236,13 @@ class CameraManager: NSObject {
         assetWriter?.add(assetAudioWriter)
     }
     
-   
     
-    // MARK: TODO - refactoring
-    // captureOutput의 속도가 매우 빨라서 startWriting이 되기 이전에
-    // startSession이 호출됨 (디버깅에선 에러X, 실행하면 에러)
     func controlRecording() {
+        
+        isWriting.toggle()
+        
         if isWriting {
-            isWriting.toggle()
             stopRecording()
-        } else {
-            isWriting.toggle()
         }
 
         captureButtonCompletion(isWriting)
@@ -283,7 +283,7 @@ class CameraManager: NSObject {
     func prepareVideoFile() {
         let ouputUrl = self.outputUrl.getUrl()
         let outputDirectory = self.outputDirectory.getDirectory()
-        let outputDirectory2 = URL.directory
+//        let outputDirectory2 = URL.directory
         
         
         if FileManager.default.fileExists(atPath: ouputUrl.path) {
@@ -407,7 +407,7 @@ extension Optional where Wrapped == URL {
     }
 }
 
-extension URL ㅌ{
+extension URL {
     static let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("recording")
     
 }

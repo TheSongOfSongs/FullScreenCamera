@@ -177,26 +177,11 @@ class CameraViewController: UIViewController {
     }
     
     func savePhoto() {
-        PHPhotoLibrary.requestAuthorization { status in
-            guard status == .authorized else { self.alert(title: "앨범 접근 확인", message: "앱 환경설정에서 사진 접근을 허용해주세요")
-                return }
-            
-            OperationQueue.main.addOperation {
-                guard let image = self.monitorView.image else {
-                    self.alert(title: "저장 실패", message: "저장할 수 없습니다")
-                    return }
-                
-                PHPhotoLibrary.shared().performChanges({
-                    PHAssetChangeRequest.creationRequestForAsset(from: image)
-                }, completionHandler: { (bool, error) in
-                    if bool == true {
-                        self.alert(title: "저장 성공", message: "사진에서 확인해보세요!")
-                    } else {
-                        self.alert(title: "저장 실패", message: "저장할 수 없습니다")
-                    }
-                })
-            }
-        }
+        guard let image = self.monitorView.image else {
+            self.alert(title: "저장 실패", message: "저장할 수 없습니다")
+            return }
+        
+        savePhotoLibrary(image: image)
     }
     
     
