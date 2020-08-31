@@ -170,13 +170,13 @@ class CameraViewController: UIViewController {
     @IBAction func capture(_ sender: UIButton) {
         
         if cameraRecorderStatus.isCamera {
-            capturePhoto()
+            savePhoto()
         } else {
             cameraManager.controlRecording()
         }
     }
     
-    func capturePhoto() {
+    func savePhoto() {
         PHPhotoLibrary.requestAuthorization { status in
             guard status == .authorized else { self.alert(title: "앨범 접근 확인", message: "앱 환경설정에서 사진 접근을 허용해주세요")
                 return }

@@ -70,61 +70,17 @@ class CameraManager: NSObject {
     
     
     // MARK: - control session
-    
     func setupSession() {
         sessionQueue.async {
             self.captureSession.beginConfiguration()
-//            self.captureSession.sessionPreset = .high
             
-            guard let camera = self.videoDeviceDiscoverySession.devices.first else {
-                self.captureSession.commitConfiguration()
-                return
-            }
-            
-            guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
-                self.captureSession.commitConfiguration()
-                return
-            }
-            
-            do {
-                let videoDeviceInput = try AVCaptureDeviceInput(device: camera)
-                
-                if self.captureSession.canAddInput(videoDeviceInput) {
-                    self.captureSession.addInput(videoDeviceInput)
-                    self.videoDeviceInput = videoDeviceInput
-                } else {
-                    self.captureSession.commitConfiguration()
-                    return
-                }
-                
-                let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
-                
-                if self.captureSession.canAddInput(audioDeviceInput) {
-                    self.captureSession.addInput(audioDeviceInput)
-                }
-                
-            } catch {
-                self.captureSession.commitConfiguration()
-                return
-            }
-            
-            if self.captureSession.canAddOutput(self.photoOutput) {
-                self.photoOutput.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey:AVVideoCodecType.jpeg])], completionHandler: nil)
-                self.captureSession.addOutput(self.photoOutput)
-                self.videoDataOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
-                self.captureSession.addOutput(self.videoDataOutput)
-            }
-            
-            if self.captureSession.canAddOutput(self.audioOutput) {
-                self.audioOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
-                self.audioOutput.recommendedAudioSettingsForAssetWriter(writingTo: .mp4)
-                self.captureSession.addOutput(self.audioOutput)
-            }
+            self.setupCameraSession()
+            self.setupAudioSession()
             
             self.captureSession.commitConfiguration()
         }
     }
-    
+
     func startSession(){
         sessionQueue.async {
             if !self.captureSession.isRunning {
@@ -138,6 +94,48 @@ class CameraManager: NSObject {
             if self.captureSession.isRunning {
                 self.captureSession.stopRunning()
             }
+        }
+    }
+    
+    
+    // MARK: - set up session
+    func setupCameraSession() {
+        do {
+            guard let camera = self.videoDeviceDiscoverySession.devices.first else { return }
+            let videoDeviceInput = try AVCaptureDeviceInput(device: camera)
+            
+            if self.captureSession.canAddInput(videoDeviceInput) {
+                self.captureSession.addInput(videoDeviceInput)
+                self.videoDeviceInput = videoDeviceInput
+                
+                if self.captureSession.canAddOutput(self.photoOutput) {
+                    self.photoOutput.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey:AVVideoCodecType.jpeg])], completionHandler: nil)
+                    self.captureSession.addOutput(self.photoOutput)
+                    self.videoDataOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
+                    self.captureSession.addOutput(self.videoDataOutput)
+                }
+            }
+        } catch {
+            return
+        }
+    }
+    
+    func setupAudioSession() {
+        do {
+            guard let audioDevice = AVCaptureDevice.default(for: .audio) else { return }
+            let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
+            
+            if self.captureSession.canAddInput(audioDeviceInput) {
+                self.captureSession.addInput(audioDeviceInput)
+            }
+            
+            if self.captureSession.canAddOutput(self.audioOutput) {
+                self.audioOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
+                self.audioOutput.recommendedAudioSettingsForAssetWriter(writingTo: .mp4)
+                self.captureSession.addOutput(self.audioOutput)
+            }
+        } catch {
+            return
         }
     }
     
@@ -181,6 +179,7 @@ class CameraManager: NSObject {
         return successSwitching
     }
     
+    
     // MARK: - record video
     func configureAssetWrtier() {
         prepareVideoFile()
@@ -188,38 +187,49 @@ class CameraManager: NSObject {
         do {
             assetWriter = try AVAssetWriter(url: outputUrl.getUrl(), fileType: AVFileType.mp4)
             
-            guard assetWriter != nil else { return }
-            let videoSize = self.videoSize ?? CGSize(width: 1920, height: 1080)
+            configureAssetVideoWriter()
+            configureAssetAudioWriter()
             
-            let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264,
-                                                AVVideoWidthKey: videoSize.height,
-                                                AVVideoHeightKey: videoSize.width,
-                                                AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: videoSize.width * videoSize.height]
-            ]
-            
-            assetVideoWriter = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: videoSettings)
-            assetVideoWriter?.expectsMediaDataInRealTime = true
-            
-            guard let assetVideoWriter = assetVideoWriter else { return }
-            assetWriter?.add(assetVideoWriter)
-            
-            let audioSettings: [String: Any] = [AVFormatIDKey: UInt(kAudioFormatMPEG4AAC),
-                                                AVNumberOfChannelsKey: UInt(2),
-                                                AVSampleRateKey: 22050,
-                                                AVEncoderBitRateKey: 8000]
-            
-            assetAudioWriter = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: audioSettings)
-            assetAudioWriter?.expectsMediaDataInRealTime = true
-            
-            guard let assetAudioWriter = assetAudioWriter else { return }
-            assetWriter?.add(assetAudioWriter)
-            
-            let adaptorSettings: [String: Any] = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32RGBA]
-            assetAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: assetVideoWriter, sourcePixelBufferAttributes: adaptorSettings)
+            if let assetVideoWriter = assetVideoWriter {
+                let adaptorSettings: [String: Any] = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32RGBA]
+                assetAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: assetVideoWriter, sourcePixelBufferAttributes: adaptorSettings)
+            }
             
         } catch {
             print("Unable to remove file at URL \(String(describing: outputUrl))")
         }
+    }
+    
+    func configureAssetVideoWriter() {
+        let videoSize = self.videoSize ?? CGSize(width: 1920, height: 1080)
+        
+        let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264,
+                                            AVVideoWidthKey: videoSize.height,
+                                            AVVideoHeightKey: videoSize.width,
+                                            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: videoSize.width * videoSize.height]
+        ]
+        
+        assetVideoWriter = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: videoSettings)
+        assetVideoWriter?.expectsMediaDataInRealTime = true
+        
+        assetVideoWriter = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: videoSettings)
+        assetVideoWriter?.expectsMediaDataInRealTime = true
+        
+        guard let assetVideoWriter = assetVideoWriter else { return }
+        assetWriter?.add(assetVideoWriter)
+    }
+    
+    func configureAssetAudioWriter() {
+        let audioSettings: [String: Any] = [AVFormatIDKey: kAudioFormatMPEG4AAC,
+                                            AVNumberOfChannelsKey: 2,
+                                            AVSampleRateKey: 44100,
+                                            AVEncoderBitRateKey: 192000]
+        
+        assetAudioWriter = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: audioSettings)
+        assetAudioWriter?.expectsMediaDataInRealTime = true
+        
+        guard let assetAudioWriter = assetAudioWriter else { return }
+        assetWriter?.add(assetAudioWriter)
     }
     
    
@@ -273,6 +283,8 @@ class CameraManager: NSObject {
     func prepareVideoFile() {
         let ouputUrl = self.outputUrl.getUrl()
         let outputDirectory = self.outputDirectory.getDirectory()
+        let outputDirectory2 = URL.directory
+        
         
         if FileManager.default.fileExists(atPath: ouputUrl.path) {
             do {
@@ -294,55 +306,66 @@ class CameraManager: NSObject {
 
 
 extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
+    
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         
         if output == videoDataOutput {
-            if connection.isVideoOrientationSupported {
-                connection.videoOrientation = .portrait // 기본 orientation; [back: 90], [front: -90]
-            }
-            
-            guard let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-            
-            let ciImage: CIImage = CIImage(cvPixelBuffer: imageBuffer)
-            var image: UIImage = self.convert(ciImage: ciImage)
-            if videoSize == nil {
-                videoSize = image.size
-            }
-            
-            if let filterName = filterManager.currentFilter, let filter = CIFilter(name: filterName) {
-                filter.setValue(ciImage, forKey: kCIInputImageKey)
-                
-                if let ciImage = filter.outputImage {
-                    let uiImage: UIImage = UIImage(ciImage: ciImage)
-                    var cgImage: CGImage? = uiImage.cgImage
-                    
-                    if cgImage == nil, let contextImage = context.createCGImage(ciImage, from: ciImage.extent) {
-                        cgImage = contextImage
-                    }
-                    
-                    if let cgImage = cgImage {
-                        let resultImage = UIImage(cgImage: cgImage)
-                        image = resultImage
-                    }
-                }
-            }
-            
-            completion(image)
-            
-            if !isCamera {
-                guard isWriting else { return }
-                let timeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                
-                if output == videoDataOutput {
-                    recordBuffer(pixelBuffer: imageBuffer, timeStamp: timeStamp)
-                }
-            }
-            
+            writeVideoBuffer(output: output, sampleBuffer: sampleBuffer, connection: connection)
         } else {
-            guard isWriting else { return }
-//            let timeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-//             assetAudioWriter?.append(sampleBuffer)
+            writeAudioBuffer(sampleBuffer: sampleBuffer)
         }
+    }
+    
+    func writeVideoBuffer(output: AVCaptureOutput, sampleBuffer: CMSampleBuffer, connection: AVCaptureConnection) {
+        
+        if connection.isVideoOrientationSupported {
+            connection.videoOrientation = .portrait // 기본 orientation; [back: 90], [front: -90]
+        }
+        
+        guard let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        completion(getFilterImage(imageBuffer: imageBuffer))
+        
+        if !isCamera {
+            guard isWriting else { return }
+            let timeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            
+            if output == videoDataOutput {
+                appendBuffer(pixelBuffer: imageBuffer, timeStamp: timeStamp)
+            }
+        }
+    }
+    
+    func writeAudioBuffer(sampleBuffer: CMSampleBuffer) {
+        guard isWriting else { return }
+        assetAudioWriter?.append(sampleBuffer)
+    }
+    
+    func getFilterImage(imageBuffer: CVPixelBuffer) -> UIImage {
+        
+        let ciImage: CIImage = CIImage(cvPixelBuffer: imageBuffer)
+        var resultImage: UIImage = self.convert(ciImage: ciImage)
+        
+        if videoSize == nil { videoSize = resultImage.size }
+        
+        if let filterName = filterManager.currentFilter, let filter = CIFilter(name: filterName) {
+            filter.setValue(ciImage, forKey: kCIInputImageKey)
+            
+            if let ciImage = filter.outputImage {
+                let uiImage: UIImage = UIImage(ciImage: ciImage)
+                var cgImage: CGImage? = uiImage.cgImage
+                
+                if cgImage == nil, let contextImage = context.createCGImage(ciImage, from: ciImage.extent) {
+                    cgImage = contextImage
+                }
+                
+                if let cgImage = cgImage {
+                    let image = UIImage(cgImage: cgImage)
+                    resultImage = image
+                }
+            }
+        }
+        
+        return resultImage
     }
     
     
@@ -354,12 +377,10 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
         return image
     }
     
-    func recordBuffer(pixelBuffer: CVPixelBuffer, timeStamp: CMTime) {
-//    func recordBuffer(pixelBuffer: CVPixelBuffer, sampleBuffer: CMSampleBuffer, timeStamp: CMTime) {
+    func appendBuffer(pixelBuffer: CVPixelBuffer, timeStamp: CMTime) {
         if startTime == nil {
             
             startRecording()
-            
             startTime = timeStamp
             assetWriter?.startSession(atSourceTime: timeStamp)
         }
@@ -384,4 +405,9 @@ extension Optional where Wrapped == URL {
         
         return documentsDirectory
     }
+}
+
+extension URL ㅌ{
+    static let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("recording")
+    
 }
