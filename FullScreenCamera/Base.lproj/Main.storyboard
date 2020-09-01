@@ -72,8 +72,11 @@
                                 </connections>
                             </button>
                             <imageView clipsSubviews="YES" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="7C5-UF-rvc">
-                                <rect key="frame" x="0.0" y="0.0" width="414" height="726"/>
+                                <rect key="frame" x="0.0" y="129" width="414" height="414"/>
                                 <gestureRecognizers/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="7C5-UF-rvc" secondAttribute="height" multiplier="1:1" id="kmk-Bn-rkZ"/>
+                                </constraints>
                                 <connections>
                                     <outletCollection property="gestureRecognizers" destination="C08-Lh-33o" appends="YES" id="P5K-Ae-e4u"/>
                                 </connections>
@@ -115,13 +118,13 @@
                         <constraints>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="X43-wj-CMs" secondAttribute="trailing" constant="72" id="0Pa-3v-t75"/>
                             <constraint firstItem="y8C-bq-ZCl" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="15" id="9eU-sB-aO5"/>
-                            <constraint firstItem="qhu-e1-fRb" firstAttribute="top" secondItem="7C5-UF-rvc" secondAttribute="bottom" constant="31" id="BGO-hx-B66"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="7C5-UF-rvc" secondAttribute="trailing" id="CB4-PH-879"/>
                             <constraint firstItem="7C5-UF-rvc" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="Jce-lA-ywQ"/>
                             <constraint firstItem="Fq0-G4-uzk" firstAttribute="leading" secondItem="n4y-a1-qz8" secondAttribute="trailing" constant="18.5" id="LDL-Aa-0A9"/>
                             <constraint firstItem="qhu-e1-fRb" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="UhP-za-DRE"/>
                             <constraint firstItem="Fq0-G4-uzk" firstAttribute="centerY" secondItem="qhu-e1-fRb" secondAttribute="centerY" id="Vt9-Yu-iR7"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="y8C-bq-ZCl" secondAttribute="trailing" constant="20" id="ZjB-Og-uAH"/>
+                            <constraint firstItem="7C5-UF-rvc" firstAttribute="top" secondItem="m9y-QQ-dg0" secondAttribute="bottom" constant="20" id="bpe-Od-QDq"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="X43-wj-CMs" secondAttribute="bottom" constant="58" id="eBA-qe-dS4"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="qhu-e1-fRb" secondAttribute="bottom" constant="40" id="mrd-1f-Qxa"/>
                             <constraint firstItem="Imq-Qc-6Jt" firstAttribute="height" secondItem="qhu-e1-fRb" secondAttribute="height" constant="20" id="noX-mS-orT"/>
@@ -129,7 +132,6 @@
                             <constraint firstItem="Imq-Qc-6Jt" firstAttribute="centerX" secondItem="qhu-e1-fRb" secondAttribute="centerX" id="q3O-Ys-Oqc"/>
                             <constraint firstItem="n4y-a1-qz8" firstAttribute="centerY" secondItem="Fq0-G4-uzk" secondAttribute="centerY" id="qVV-kB-58M"/>
                             <constraint firstItem="Imq-Qc-6Jt" firstAttribute="centerY" secondItem="qhu-e1-fRb" secondAttribute="centerY" id="tfy-Bf-opY"/>
-                            <constraint firstItem="7C5-UF-rvc" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" id="tml-8q-xnT"/>
                             <constraint firstItem="qhu-e1-fRb" firstAttribute="leading" secondItem="Fq0-G4-uzk" secondAttribute="trailing" constant="40" id="ybI-Cm-2sk"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>

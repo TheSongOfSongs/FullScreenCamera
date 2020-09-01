@@ -74,6 +74,7 @@ class CameraManager: NSObject {
     func setupSession() {
         sessionQueue.async {
             self.captureSession.beginConfiguration()
+            self.captureSession.sessionPreset = .photo
             
             self.setupVideoSession()
             self.setupAudioSession()
@@ -318,15 +319,21 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
         }
         
         guard let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        let filteredImage = getFilterImage(imageBuffer: imageBuffer)
-        completion(filteredImage)
+        
+        let cgImage = getFilterImage(imageBuffer: imageBuffer)
+        let uiImage = UIImage(cgImage: cgImage!)
+        let imageSize = uiImage.size
+        
+        if videoSize == nil { videoSize = imageSize }
+        
+        completion(uiImage)
         
         if !isCamera {
             guard isWriting else { return }
-            let timeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
             
-            if output == videoDataOutput {
-                appendBuffer(pixelBuffer: convertUiCv(uiImage: filteredImage) ?? imageBuffer, timeStamp: timeStamp)
+            if output == videoDataOutput, let cgImage = cgImage, let pixelBuffer = cgImage.convertToCVPixelBuffer(size: imageSize) {
+                let timeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                appendBuffer(pixelBuffer: pixelBuffer, timeStamp: timeStamp)
             }
         }
     }
@@ -336,68 +343,22 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
         assetAudioWriter?.append(sampleBuffer)
     }
     
-    func getFilterImage(imageBuffer: CVPixelBuffer) -> UIImage {
-        
+    func getFilterImage(imageBuffer: CVPixelBuffer) -> CGImage? {
         let ciImage: CIImage = CIImage(cvPixelBuffer: imageBuffer)
-        var resultImage: UIImage = self.convertCiUi(ciImage: ciImage)
-        
-        if videoSize == nil { videoSize = resultImage.size }
+        var cgImage: CGImage?
         
         if let filterName = filterManager.currentFilter, let filter = CIFilter(name: filterName) {
             filter.setValue(ciImage, forKey: kCIInputImageKey)
             
             if let ciImage = filter.outputImage {
-                let uiImage: UIImage = UIImage(ciImage: ciImage)
-                var cgImage: CGImage? = uiImage.cgImage
-                
-                if cgImage == nil, let contextImage = context.createCGImage(ciImage, from: ciImage.extent) {
-                    cgImage = contextImage
-                }
-                
-                if let cgImage = cgImage {
-                    let image = UIImage(cgImage: cgImage)
-                    resultImage = image
-                }
+                cgImage = ciImage.convertToCGImage()
+                return cgImage
             }
         }
         
-        return resultImage
+        return ciImage.convertToCGImage()
     }
     
-    
-    func convertCiUi(ciImage:CIImage) -> UIImage {
-        let context:CIContext = CIContext.init(options: nil)
-        guard let cgImage:CGImage = context.createCGImage(ciImage, from: ciImage.extent) else { return UIImage() }
-        let image: UIImage = UIImage(cgImage: cgImage)
-        
-        return image
-    }
-    
-    func convertUiCv(uiImage: UIImage) -> CVPixelBuffer? {
-        let attributes = [kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue, kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue] as CFDictionary
-        var pixelBuffer: CVPixelBuffer?
-        
-        let status = CVPixelBufferCreate(kCFAllocatorDefault, Int(uiImage.size.width), Int(uiImage.size.height), kCVPixelFormatType_32ARGB, attributes, &pixelBuffer)
-        guard (status == kCVReturnSuccess) else { return nil }
-        
-        CVPixelBufferLockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
-        
-        let pixelData = CVPixelBufferGetBaseAddress(pixelBuffer!)
-        let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
-        
-        let context = CGContext(data: pixelData, width: Int(uiImage.size.width), height: Int(uiImage.size.height), bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer!), space: rgbColorSpace, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
-        
-        context?.translateBy(x: 0, y: uiImage.size.height)
-        context?.scaleBy(x: 1.0, y: -1.0)
-        
-        UIGraphicsPushContext(context!)
-        uiImage.draw(in: CGRect(x: 0, y: 0, width: uiImage.size.width, height: uiImage.size.height))
-        UIGraphicsPopContext()
-        
-        CVPixelBufferUnlockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
-        
-        return pixelBuffer
-    }
     
     func appendBuffer(pixelBuffer: CVPixelBuffer, timeStamp: CMTime) {
         if startTime == nil {
@@ -415,4 +376,39 @@ extension URL {
     static let outputDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("recording")
     
     static let outputUrl = outputDirectory.appendingPathComponent("test.mp4")
+}
+
+
+/** convert image type **/
+
+extension CIImage {
+    func convertToCGImage() -> CGImage? {
+        let context = CIContext(options: nil)
+        return context.createCGImage(self, from: self.extent)
+    }
+}
+
+
+extension CGImage {
+    func convertToCVPixelBuffer(size: CGSize) -> CVPixelBuffer? {
+        let attributes = [kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue, kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue] as CFDictionary
+        var pixelBuffer: CVPixelBuffer?
+        
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, Int(size.width), Int(size.height), kCVPixelFormatType_32ARGB, attributes, &pixelBuffer)
+        guard (status == kCVReturnSuccess) else { return nil }
+        
+        CVPixelBufferLockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
+        
+        let pixelData = CVPixelBufferGetBaseAddress(pixelBuffer!)
+        let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
+        
+        let context = CGContext(data: pixelData, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer!), space: rgbColorSpace, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
+        
+        context?.scaleBy(x: 1.0, y: 1.0)
+        context?.draw(self, in: CGRect(x: 0, y: 0, width: self.width, height: self.height))
+        
+        CVPixelBufferUnlockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
+        
+        return pixelBuffer
+    }
 }
