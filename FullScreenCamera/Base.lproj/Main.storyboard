@@ -75,7 +75,7 @@
                                 <rect key="frame" x="0.0" y="129" width="414" height="414"/>
                                 <gestureRecognizers/>
                                 <constraints>
-                                    <constraint firstAttribute="width" secondItem="7C5-UF-rvc" secondAttribute="height" multiplier="1:1" id="kmk-Bn-rkZ"/>
+                                    <constraint firstAttribute="width" secondItem="7C5-UF-rvc" secondAttribute="height" multiplier="1:1" id="1Fv-fg-Mke"/>
                                 </constraints>
                                 <connections>
                                     <outletCollection property="gestureRecognizers" destination="C08-Lh-33o" appends="YES" id="P5K-Ae-e4u"/>

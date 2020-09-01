@@ -17,7 +17,7 @@ class CameraViewController: UIViewController {
     
     private lazy var filterView: UIView = {
         let monitorViewSize = self.monitorView.frame.size
-        let frame = CGRect(x: 0, y: monitorViewSize.height, width: monitorViewSize.width, height: self.view.frame.size.height - monitorViewSize.height)
+        let frame = CGRect(x: 0, y: self.view.frame.height - 150, width: monitorViewSize.width, height: 150)
         
         let filterView = FilterCollection(frame: frame)
         return filterView
