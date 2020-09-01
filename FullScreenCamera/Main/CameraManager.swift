@@ -13,8 +13,6 @@ import Photos
 
 class CameraManager: NSObject {
     
-    /****/
-    
     let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInDualCamera, .builtInWideAngleCamera,
                                                                                      .builtInTrueDepthCamera],
                                                                        mediaType: .video,
@@ -25,7 +23,6 @@ class CameraManager: NSObject {
     let sessionQueue = DispatchQueue(label: "session Queue")
     
     let audioQueue = DispatchQueue(label: "audio Queue")
-    
     
     var assetWriter: AVAssetWriter?
     
@@ -41,7 +38,7 @@ class CameraManager: NSObject {
     
     let videoDataOutput = AVCaptureVideoDataOutput()
     
-    var audioOutput = AVCaptureAudioDataOutput()
+    var audioDataOutput = AVCaptureAudioDataOutput()
     
     
     var completion: (UIImage) -> Void = { image in return }
@@ -78,7 +75,7 @@ class CameraManager: NSObject {
         sessionQueue.async {
             self.captureSession.beginConfiguration()
             
-            self.setupCameraSession()
+            self.setupVideoSession()
             self.setupAudioSession()
             
             self.captureSession.commitConfiguration()
@@ -103,7 +100,7 @@ class CameraManager: NSObject {
     
     
     // MARK: - set up session
-    func setupCameraSession() {
+    func setupVideoSession() {
         do {
             guard let camera = self.videoDeviceDiscoverySession.devices.first else { return }
             let videoDeviceInput = try AVCaptureDeviceInput(device: camera)
@@ -133,10 +130,10 @@ class CameraManager: NSObject {
                 self.captureSession.addInput(audioDeviceInput)
             }
             
-            if self.captureSession.canAddOutput(self.audioOutput) {
-                self.audioOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
-                self.audioOutput.recommendedAudioSettingsForAssetWriter(writingTo: .mp4)
-                self.captureSession.addOutput(self.audioOutput)
+            if self.captureSession.canAddOutput(self.audioDataOutput) {
+                self.audioDataOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
+                self.audioDataOutput.recommendedAudioSettingsForAssetWriter(writingTo: .mp4)
+                self.captureSession.addOutput(self.audioDataOutput)
             }
         } catch {
             return
@@ -189,7 +186,7 @@ class CameraManager: NSObject {
         prepareVideoFile()
         
         do {
-            assetWriter = try AVAssetWriter(url: outputUrl.getUrl(), fileType: AVFileType.mp4)
+            assetWriter = try AVAssetWriter(url: URL.outputUrl, fileType: AVFileType.mp4)
             
             configureAssetVideoWriter()
             configureAssetAudioWriter()
@@ -238,13 +235,13 @@ class CameraManager: NSObject {
     
     
     func controlRecording() {
-        
-        isWriting.toggle()
-        
         if isWriting {
+            isWriting.toggle()
             stopRecording()
+        } else {
+            isWriting.toggle()
         }
-
+        
         captureButtonCompletion(isWriting)
     }
     
@@ -281,10 +278,8 @@ class CameraManager: NSObject {
     }
     
     func prepareVideoFile() {
-        let ouputUrl = self.outputUrl.getUrl()
-        let outputDirectory = self.outputDirectory.getDirectory()
-//        let outputDirectory2 = URL.directory
-        
+        let ouputUrl = URL.outputUrl
+        let outputDirectory = URL.outputDirectory
         
         if FileManager.default.fileExists(atPath: ouputUrl.path) {
             do {
@@ -323,14 +318,15 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
         }
         
         guard let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        completion(getFilterImage(imageBuffer: imageBuffer))
+        let filteredImage = getFilterImage(imageBuffer: imageBuffer)
+        completion(filteredImage)
         
         if !isCamera {
             guard isWriting else { return }
             let timeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
             
             if output == videoDataOutput {
-                appendBuffer(pixelBuffer: imageBuffer, timeStamp: timeStamp)
+                appendBuffer(pixelBuffer: convertUiCv(uiImage: filteredImage) ?? imageBuffer, timeStamp: timeStamp)
             }
         }
     }
@@ -343,7 +339,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
     func getFilterImage(imageBuffer: CVPixelBuffer) -> UIImage {
         
         let ciImage: CIImage = CIImage(cvPixelBuffer: imageBuffer)
-        var resultImage: UIImage = self.convert(ciImage: ciImage)
+        var resultImage: UIImage = self.convertCiUi(ciImage: ciImage)
         
         if videoSize == nil { videoSize = resultImage.size }
         
@@ -369,12 +365,38 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
     }
     
     
-    func convert(ciImage:CIImage) -> UIImage {
+    func convertCiUi(ciImage:CIImage) -> UIImage {
         let context:CIContext = CIContext.init(options: nil)
         guard let cgImage:CGImage = context.createCGImage(ciImage, from: ciImage.extent) else { return UIImage() }
         let image: UIImage = UIImage(cgImage: cgImage)
         
         return image
+    }
+    
+    func convertUiCv(uiImage: UIImage) -> CVPixelBuffer? {
+        let attributes = [kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue, kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue] as CFDictionary
+        var pixelBuffer: CVPixelBuffer?
+        
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, Int(uiImage.size.width), Int(uiImage.size.height), kCVPixelFormatType_32ARGB, attributes, &pixelBuffer)
+        guard (status == kCVReturnSuccess) else { return nil }
+        
+        CVPixelBufferLockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
+        
+        let pixelData = CVPixelBufferGetBaseAddress(pixelBuffer!)
+        let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
+        
+        let context = CGContext(data: pixelData, width: Int(uiImage.size.width), height: Int(uiImage.size.height), bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer!), space: rgbColorSpace, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
+        
+        context?.translateBy(x: 0, y: uiImage.size.height)
+        context?.scaleBy(x: 1.0, y: -1.0)
+        
+        UIGraphicsPushContext(context!)
+        uiImage.draw(in: CGRect(x: 0, y: 0, width: uiImage.size.width, height: uiImage.size.height))
+        UIGraphicsPopContext()
+        
+        CVPixelBufferUnlockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
+        
+        return pixelBuffer
     }
     
     func appendBuffer(pixelBuffer: CVPixelBuffer, timeStamp: CMTime) {
@@ -389,25 +411,8 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
     }
 }
 
-
-extension Optional where Wrapped == URL {
-    func getUrl() -> URL {
-        return self ?? getDirectory().appendingPathComponent("test.mp4")
-    }
-    
-    func getDirectory() -> URL {
-        return self ?? getDocumentsDirectory().appendingPathComponent("recording")
-    }
-    
-    func getDocumentsDirectory() -> URL {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        let documentsDirectory = paths[0]
-        
-        return documentsDirectory
-    }
-}
-
 extension URL {
-    static let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("recording")
+    static let outputDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("recording")
     
+    static let outputUrl = outputDirectory.appendingPathComponent("test.mp4")
 }
