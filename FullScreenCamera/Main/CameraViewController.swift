@@ -9,12 +9,6 @@ class CameraViewController: UIViewController {
     
     let filterManager = FilterManager.shared
     
-    var videoDeviceInput: AVCaptureDeviceInput!
-    
-    let videoDataOutput = AVCaptureVideoDataOutput()
-    
-    var recordOutput = AVCaptureMovieFileOutput()
-    
     private lazy var filterView: UIView = {
         let monitorViewSize = self.monitorView.frame.size
         let frame = CGRect(x: 0, y: self.view.frame.height - 150, width: monitorViewSize.width, height: 150)
@@ -74,10 +68,14 @@ class CameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.cameraManager.setupSession()
-        self.cameraManager.startSession()
-        
         setupUI()
+        cameraManager.videoSavingCompletion = { success in
+            if success {
+                self.alert(title: "저장 성공", message: "사진에서 확인해보세요!")
+            } else {
+                self.alert(title: "저장 실패", message: "저장할 수 없습니다")
+            }
+        }
     }
     
     func setupUI() {
@@ -92,9 +90,11 @@ class CameraViewController: UIViewController {
         blurBGView.layer.cornerRadius = blurBGView.bounds.height/2
         blurBGView.layer.masksToBounds = true
         
-        cameraManager.completion = { image in
+        cameraManager.filterImageCompletion = { image in
+            let uiImage = image.convertToUIImage()
+            
             DispatchQueue.main.async {
-                self.monitorView.image = image
+                self.monitorView.image = uiImage
             }
         }
         
@@ -103,6 +103,8 @@ class CameraViewController: UIViewController {
                 self.captureButton.backgroundColor = isRecording ? .orange : .red
             }
         }
+        
+        
     }
     
     func convert(ciImage:CIImage) -> UIImage
@@ -212,5 +214,3 @@ class CameraViewController: UIViewController {
         }
     }
 }
-
-

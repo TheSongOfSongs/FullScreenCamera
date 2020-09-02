@@ -13,11 +13,7 @@ import Photos
 
 class CameraManager: NSObject {
     
-    let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInDualCamera,
-                                                                                     .builtInWideAngleCamera,
-                                                                                     .builtInTrueDepthCamera],
-                                                                       mediaType: .video,
-                                                                       position: .unspecified)
+    var videoDeviceDiscoverySession: AVCaptureDevice.DiscoverySession?
     
     let captureSession = AVCaptureSession()
     
@@ -41,10 +37,11 @@ class CameraManager: NSObject {
     
     var audioDataOutput = AVCaptureAudioDataOutput()
     
-    
-    var completion: (UIImage) -> Void = { image in return }
+    var filterImageCompletion: (CIImage) -> Void = { image in return }
     
     var captureButtonCompletion: (Bool) -> Void = { isRecording in return }
+    
+    var videoSavingCompletion: (Bool) -> Void = { didSave in return }
     
     let filterManager = FilterManager.shared
     
@@ -68,6 +65,18 @@ class CameraManager: NSObject {
     
     func toggleCameraRecorderStatus() {
         isCamera.toggle()
+    }
+    
+    override init() {
+        super.init()
+        
+        videoDeviceDiscoverySession = .init(deviceTypes:  [.builtInDualCamera, .builtInWideAngleCamera, .builtInTrueDepthCamera],
+                                            mediaType: .video,
+                                            position: .unspecified)
+        
+        setupSession()
+        startSession()
+        
     }
     
     
@@ -104,7 +113,9 @@ class CameraManager: NSObject {
     // MARK: - set up session
     func setupVideoSession() {
         do {
-            guard let camera = self.videoDeviceDiscoverySession.devices.first else { return }
+            guard let videoDeviceDiscoverySession = videoDeviceDiscoverySession,
+                let camera = videoDeviceDiscoverySession.devices.first else { return }
+            
             let videoDeviceInput = try AVCaptureDeviceInput(device: camera)
             
             if self.captureSession.canAddInput(videoDeviceInput) {
@@ -146,13 +157,15 @@ class CameraManager: NSObject {
     
     func isSwitchingCamera() -> Bool {
         var successSwitching: Bool = false
-        guard videoDeviceDiscoverySession.devices.count > 1 else { return successSwitching }
+        
+        guard let videoDeviceDiscoverySession = videoDeviceDiscoverySession,
+            videoDeviceDiscoverySession.devices.count > 1 else { return successSwitching }
         
         let currentVideoDevice = self.videoDeviceInput.device
         let currentPosition = currentVideoDevice.position
         let isFront = currentPosition == .front
         let preferredPosition: AVCaptureDevice.Position = isFront ? .back : .front
-        let devices = self.videoDeviceDiscoverySession.devices
+        let devices = videoDeviceDiscoverySession.devices
         let newVideoDevice: AVCaptureDevice? = devices.first(where: { device in
             return preferredPosition == device.position
         })
@@ -271,9 +284,7 @@ class CameraManager: NSObject {
                         guard let video = self.assetWriter?.outputURL else { return }
                         PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: video)
                     }, completionHandler: { (success, error) in
-                        if error != nil {
-                            print(error?.localizedDescription ?? "")
-                        }
+                        self.videoSavingCompletion(success)
                     })
                 }
             }
@@ -322,9 +333,8 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
         
         guard let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         let ciImage: CIImage = getFilterImage(imageBuffer: imageBuffer)
-        let uiImage: UIImage = ciImage.convertToUIImage()
         
-        completion(uiImage)
+        filterImageCompletion(ciImage)
         
         if !isCamera {
             guard isWriting else { return }
@@ -389,6 +399,7 @@ extension CIImage {
         
         let attrs = [kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue,
                      kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue] as CFDictionary
+        
         let width: Int = Int(self.extent.width)
         let height: Int = Int(self.extent.height)
         
@@ -406,7 +417,6 @@ extension CIImage {
     }
     
     func convertToUIImage() -> UIImage {
-        
         guard var cgImage = self.convertToCGImage() else { return UIImage() }
         
         let rect = CGRect(x: 0, y: cgImage.width/2 - cgImage.width/2, width: cgImage.width, height: cgImage.width)
