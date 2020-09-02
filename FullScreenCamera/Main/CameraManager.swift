@@ -248,6 +248,7 @@ class CameraManager: NSObject {
     }
     
     func startRecording() {
+        configureAssetWrtier()
         assetWriter?.startWriting()
     }
     
@@ -412,62 +413,5 @@ extension CIImage {
         cgImage = cgImage.cropping(to:rect) ?? cgImage
     
         return UIImage(cgImage: cgImage)
-    }
-}
-
-
-extension CGImage {
-    func convertToCVPixelBuffer(size: CGSize) -> CVPixelBuffer? {
-        let attributes = [kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue,
-                          kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue] as CFDictionary
-        var pixelBuffer: CVPixelBuffer?
-        
-        let status = CVPixelBufferCreate(kCFAllocatorDefault,
-                                         Int(size.width),
-                                         Int(size.height),
-                                         kCVPixelFormatType_32ARGB,
-                                         attributes,
-                                         &pixelBuffer)
-        
-        guard (status == kCVReturnSuccess) else { return nil }
-        
-        CVPixelBufferLockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
-        
-        let pixelData = CVPixelBufferGetBaseAddress(pixelBuffer!)
-        let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
-        
-        let context = CGContext(data: pixelData,
-                                width: Int(size.width),
-                                height: Int(size.height),
-                                bitsPerComponent: 8,
-                                bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer!),
-                                space: rgbColorSpace, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
-        
-        context?.scaleBy(x: 1.0, y: 1.0)
-        context?.draw(self, in: CGRect(x: 0, y: 0, width: self.width, height: self.height))
-        
-        CVPixelBufferUnlockBaseAddress(pixelBuffer!, CVPixelBufferLockFlags(rawValue: 0))
-        
-        return pixelBuffer
-    }
-}
-
-extension UIImage {
-    func cropImage(toRect cropRect: CGRect, viewWidth: CGFloat, viewHeight: CGFloat) -> UIImage? {
-        let imageViewScale = max(self.size.width / viewWidth,
-                                 self.size.height / viewHeight)
-        
-        let cropZone = CGRect(x:cropRect.origin.x * imageViewScale,
-                              y:cropRect.origin.y * imageViewScale,
-                              width:cropRect.size.width * imageViewScale,
-                              height:cropRect.size.height * imageViewScale)
-        
-        guard let cutImageRef: CGImage = self.cgImage?.cropping(to:cropZone) else {
-            return nil
-        }
-        
-        let croppedImage: UIImage = UIImage(cgImage: cutImageRef)
-        
-        return croppedImage
     }
 }
