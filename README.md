@@ -50,3 +50,15 @@ Custom Camera를 구현하여 사진과 비디오를 촬영하고, 필터를 사
 - swift5
  - iOS13.0
  - Xcode11.5
+
+
+
+## Version
+### Version1
+- AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate를 이용하여
+  실시간으로 비디오와 오디오를 버퍼로 받아 타임스탬프와 함께 AVAssetWriterInput(오디오)와 AVAssetWriterInputPixelBufferAdaptor(비디오)에 추가.
+
+- 사용자가 카메라로 들어오는 Input을 확인할 수 있도록, 들어오는 버퍼는 이미지로 변환하여 callback을 통해 뷰 컨트롤러에 띄우주는 방식 이용.
+
+- 화면의 필터를 씌우기 위해 버퍼를 필터를 건 CIImage 로 바꾸고, 비디오는 다시 픽셀 버퍼로 변경한 다음 AVAssetWriterInputPixelBufferAdaptor에 추가.
+  필터 적용된 사진을 위해, 뷰 컨트롤러에서 CIImage를 CGImage로 바꾼 다음 다시 UIImage로 변경

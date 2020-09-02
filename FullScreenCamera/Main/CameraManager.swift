@@ -63,10 +63,6 @@ class CameraManager: NSObject {
     
     var videoSize: CGSize?
     
-    func toggleCameraRecorderStatus() {
-        isCamera.toggle()
-    }
-    
     override init() {
         super.init()
         
@@ -76,7 +72,10 @@ class CameraManager: NSObject {
         
         setupSession()
         startSession()
-        
+    }
+    
+    func toggleCameraRecorderStatus() {
+        isCamera.toggle()
     }
     
     
@@ -86,6 +85,7 @@ class CameraManager: NSObject {
             self.captureSession.beginConfiguration()
             self.captureSession.sessionPreset = .photo
             
+            self.setupCameraSession()
             self.setupVideoSession()
             self.setupAudioSession()
             
@@ -111,6 +111,13 @@ class CameraManager: NSObject {
     
     
     // MARK: - set up session
+    func setupCameraSession() {
+        if self.captureSession.canAddOutput(self.photoOutput) {
+            self.photoOutput.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey:AVVideoCodecType.jpeg])], completionHandler: nil)
+            self.captureSession.addOutput(self.photoOutput)
+        }
+    }
+    
     func setupVideoSession() {
         do {
             guard let videoDeviceDiscoverySession = videoDeviceDiscoverySession,
@@ -121,13 +128,11 @@ class CameraManager: NSObject {
             if self.captureSession.canAddInput(videoDeviceInput) {
                 self.captureSession.addInput(videoDeviceInput)
                 self.videoDeviceInput = videoDeviceInput
-                
-                if self.captureSession.canAddOutput(self.photoOutput) {
-                    self.photoOutput.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey:AVVideoCodecType.jpeg])], completionHandler: nil)
-                    self.captureSession.addOutput(self.photoOutput)
-                    self.videoDataOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
-                    self.captureSession.addOutput(self.videoDataOutput)
-                }
+            }
+            
+            if self.captureSession.canAddOutput(self.videoDataOutput) {
+                self.videoDataOutput.setSampleBufferDelegate(self, queue: self.sessionQueue)
+                self.captureSession.addOutput(self.videoDataOutput)
             }
         } catch {
             return
@@ -154,7 +159,6 @@ class CameraManager: NSObject {
     }
     
     // MARK: - switchCamera
-    
     func isSwitchingCamera() -> Bool {
         var successSwitching: Bool = false
         
@@ -250,13 +254,12 @@ class CameraManager: NSObject {
     
     
     func controlRecording() {
+        
         if isWriting {
-            isWriting.toggle()
             stopRecording()
-        } else {
-            isWriting.toggle()
         }
         
+        isWriting.toggle()
         captureButtonCompletion(isWriting)
     }
     
@@ -295,19 +298,19 @@ class CameraManager: NSObject {
         let ouputUrl = URL.outputUrl
         let outputDirectory = URL.outputDirectory
         
-        if FileManager.default.fileExists(atPath: ouputUrl.path) {
-            do {
-                try FileManager.default.removeItem(at: ouputUrl)
-            } catch {
-                print("Unable to remove file at URL \(ouputUrl)")
-            }
-        }
-        
         if !FileManager.default.fileExists(atPath: outputDirectory.path) {
             do {
                 try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true, attributes: nil)
             } catch {
                 print("Unable to create directory at URL \(outputDirectory)")
+            }
+        }
+        
+        if FileManager.default.fileExists(atPath: ouputUrl.path) {
+            do {
+                try FileManager.default.removeItem(at: ouputUrl)
+            } catch {
+                print("Unable to remove file at URL \(ouputUrl)")
             }
         }
     }
@@ -347,11 +350,13 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
     }
     
     func writeAudioBuffer(sampleBuffer: CMSampleBuffer) {
+        
         guard isWriting else { return }
         assetAudioWriter?.append(sampleBuffer)
     }
     
     func getFilterImage(imageBuffer: CVPixelBuffer) -> CIImage {
+        
         var ciImage: CIImage = CIImage(cvPixelBuffer: imageBuffer)
         
         if let filterName = filterManager.currentFilter, let filter = CIFilter(name: filterName) {

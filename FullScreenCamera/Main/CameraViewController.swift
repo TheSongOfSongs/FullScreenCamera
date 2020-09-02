@@ -17,9 +17,6 @@ class CameraViewController: UIViewController {
         return filterView
     }()
     
-    let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes:
-        [.builtInDualCamera, .builtInWideAngleCamera, .builtInTrueDepthCamera], mediaType: .video, position: .unspecified)
-    
     var cameraRecorderStatus: CameraRecorder = .camera {
         didSet {
             if cameraRecorderStatus.isCamera {
@@ -103,17 +100,6 @@ class CameraViewController: UIViewController {
                 self.captureButton.backgroundColor = isRecording ? .orange : .red
             }
         }
-        
-        
-    }
-    
-    func convert(ciImage:CIImage) -> UIImage
-    {
-        let context:CIContext = CIContext.init(options: nil)
-        guard let cgImage:CGImage = context.createCGImage(ciImage, from: ciImage.extent) else { return UIImage() }
-        let image: UIImage = UIImage(cgImage: cgImage)
-        
-        return image
     }
     
     
@@ -180,7 +166,8 @@ class CameraViewController: UIViewController {
     func savePhoto() {
         guard let image = self.monitorView.image else {
             self.alert(title: "저장 실패", message: "저장할 수 없습니다")
-            return }
+            return
+        }
         
         savePhotoLibrary(image: image)
     }
