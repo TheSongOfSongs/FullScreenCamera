@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3C2A6E0F2508C475005995CA /* FilterOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2A6E0E2508C475005995CA /* FilterOperations.swift */; };
+		3C2A6E112508C48E005995CA /* FilterOperationTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2A6E102508C48E005995CA /* FilterOperationTypes.swift */; };
 		3C71EA5424FF8C9C003F9D68 /* GPUImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C71EA4E24FF8C8F003F9D68 /* GPUImage.framework */; };
 		3C71EA5624FF8CAC003F9D68 /* GPUImage.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3C71EA4E24FF8C8F003F9D68 /* GPUImage.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3C8D8F1B24F37B6400076E16 /* FilterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8D8F1A24F37B6400076E16 /* FilterManager.swift */; };
@@ -62,6 +64,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3C2A6E0E2508C475005995CA /* FilterOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterOperations.swift; sourceTree = "<group>"; };
+		3C2A6E102508C48E005995CA /* FilterOperationTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterOperationTypes.swift; sourceTree = "<group>"; };
 		3C71EA4824FF8C8F003F9D68 /* GPUImage.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = GPUImage.xcodeproj; path = ../GPUImage3/framework/GPUImage.xcodeproj; sourceTree = "<group>"; };
 		3C8D8F1A24F37B6400076E16 /* FilterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterManager.swift; sourceTree = "<group>"; };
 		3C8D8F5024F4A8F400076E16 /* FilterCollection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterCollection.swift; sourceTree = "<group>"; };
@@ -92,6 +96,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3C2A6E0D2508C451005995CA /* Operations */ = {
+			isa = PBXGroup;
+			children = (
+				3C2A6E0E2508C475005995CA /* FilterOperations.swift */,
+				3C2A6E102508C48E005995CA /* FilterOperationTypes.swift */,
+			);
+			path = Operations;
+			sourceTree = "<group>";
+		};
 		3C71EA4924FF8C8F003F9D68 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -160,6 +173,7 @@
 		9430CFA022756AF800E50FA8 /* FullScreenCamera */ = {
 			isa = PBXGroup;
 			children = (
+				3C2A6E0D2508C451005995CA /* Operations */,
 				4D74EB1924B34EC3002A8D98 /* Photo */,
 				4D74EB1824B34EB0002A8D98 /* Main */,
 				9430CFA122756AF800E50FA8 /* AppDelegate.swift */,
@@ -272,9 +286,11 @@
 				3C8D8F1B24F37B6400076E16 /* FilterManager.swift in Sources */,
 				3C8D8F5A24F4C42400076E16 /* FilterCollectionViewCell.swift in Sources */,
 				9430CFA422756AF800E50FA8 /* CameraViewController.swift in Sources */,
+				3C2A6E112508C48E005995CA /* FilterOperationTypes.swift in Sources */,
 				3C8D8F5124F4A8F400076E16 /* FilterCollection.swift in Sources */,
 				4D74EB1724B34EA9002A8D98 /* PhotoViewController.swift in Sources */,
 				3C9779D324EE503500A70940 /* CameraManager.swift in Sources */,
+				3C2A6E0F2508C475005995CA /* FilterOperations.swift in Sources */,
 				9430CFA222756AF800E50FA8 /* AppDelegate.swift in Sources */,
 				4D74EB1B24B366B9002A8D98 /* Extension+CameraViewController.swift in Sources */,
 			);

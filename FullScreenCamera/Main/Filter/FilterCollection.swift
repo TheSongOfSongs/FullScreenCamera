@@ -12,6 +12,8 @@ class FilterCollection: UIView {
 
     @IBOutlet weak var collectionView: UICollectionView!
     
+    var selectFilterCompletion: (Bool) -> Void = { isRecording in return }
+    
     let filterManager = FilterManager.shared
     
     private let xibName = "FilterCollection"
@@ -41,8 +43,10 @@ class FilterCollection: UIView {
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let filterName = filterManager.filterArr[indexPath.item].effectName
-        filterManager.currentFilter = filterName
+//        let filterName = filterManager.filterArr[indexPath.item].effectNam
+//        filterManager.currentFilter = filterName
+//        let filterName = filterManager.filterArr[indexPath.item].filterName
+        
     }
 
 }
@@ -50,7 +54,7 @@ class FilterCollection: UIView {
 extension FilterCollection: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return filterManager.filterArr.count
+        return filterOperations.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -58,10 +62,7 @@ extension FilterCollection: UICollectionViewDataSource {
             fatalError("can't dequeue FilterCollectionViewCell")
         }
         
-        let filter = filterManager.filterArr[indexPath.item]
-        
-        cell.filterName.text = filter.filterName
-        cell.filterImage.image = filter.image
+        cell.filterName.text = filterOperations[indexPath.row].listName
         
         return cell
     }

@@ -4,21 +4,19 @@ import Photos
 import CoreImage
 import GPUImage
 
+let blendImageName = "WID-small.jpg"
+
 class CameraViewController: UIViewController {
     
     var camera: Camera!
     
+    var blendImage:PictureInput?
+    
+    var filterOperation: FilterOperationInterface?
+    
     let cameraManager = CameraManager()
     
     let filterManager = FilterManager.shared
-    
-//    private lazy var filterView: UIView = {
-//        let monitorViewSize = self.monitorView.frame.size
-//        let frame = CGRect(x: 0, y: self.view.frame.height - 150, width: monitorViewSize.width, height: 150)
-//
-//        let filterView = FilterCollection(frame: frame)
-//        return filterView
-//    }()
     
     private lazy var filterView: UIView = {
         let renderViewSize = self.renderView.frame.size
@@ -75,26 +73,27 @@ class CameraViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        do {
+            camera = try Camera(sessionPreset:.vga640x480, location:.backFacing)
+        } catch {
+            camera = nil
+            print("Couldn't initialize camera with error: \(error)")
+        }
+        filterOperation = filterOperations[8]
+        self.configureView()
         
         setupUI()
-        cameraManager.videoSavingCompletion = { success in
-            if success {
-                self.alert(title: "저장 성공", message: "사진에서 확인해보세요!")
-            } else {
-                self.alert(title: "저장 실패", message: "저장할 수 없습니다")
-            }
-        }
-        
-        do {
-            camera = try Camera(sessionPreset: .high)
-//            camera.runBenchmark = true
-            camera --> renderView
-            camera.startCapture()
-            
-        } catch {
-            fatalError("Could not initialize rendering pipeline: \(error)")
-        }
+//        cameraManager.videoSavingCompletion = { success in
+//            if success {
+//                self.alert(title: "저장 성공", message: "사진에서 확인해보세요!")
+//            } else {
+//                self.alert(title: "저장 실패", message: "저장할 수 없습니다")
+//            }
+        //        }
     }
+    
+    
+    
     
     func setupUI() {
         captureButton.layer.cornerRadius = 10
@@ -211,6 +210,37 @@ class CameraViewController: UIViewController {
             alert.addAction(ok)
             
             self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
+    func configureView() {
+        guard let videoCamera = camera else {
+            let errorAlertController = UIAlertController(title: NSLocalizedString("Error", comment: "Error"), message: "Couldn't initialize camera", preferredStyle: .alert)
+            errorAlertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil))
+            self.present(errorAlertController, animated: true, completion: nil)
+            return
+        }
+        if let currentFilterConfiguration = self.filterOperation {
+            self.title = currentFilterConfiguration.titleName
+            
+            // Configure the filter chain, ending with the view
+            if let view = self.renderView {
+                switch currentFilterConfiguration.filterOperationType {
+                case .singleInput:
+                    videoCamera.addTarget(currentFilterConfiguration.filter)
+                    currentFilterConfiguration.filter.addTarget(view)
+                case .blend:
+                    videoCamera.addTarget(currentFilterConfiguration.filter)
+                    self.blendImage = PictureInput(imageName:blendImageName)
+                    self.blendImage?.addTarget(currentFilterConfiguration.filter)
+                    self.blendImage?.processImage()
+                    currentFilterConfiguration.filter.addTarget(view)
+                case let .custom(filterSetupFunction:setupFunction):
+                    currentFilterConfiguration.configureCustomFilter(setupFunction(videoCamera, currentFilterConfiguration.filter, view))
+                }
+                
+                videoCamera.startCapture()
+            }
         }
     }
 }

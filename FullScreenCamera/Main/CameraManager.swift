@@ -362,13 +362,13 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
         
         var ciImage: CIImage = CIImage(cvPixelBuffer: imageBuffer)
         
-        if let filterName = filterManager.currentFilter, let filter = CIFilter(name: filterName) {
-            filter.setValue(ciImage, forKey: kCIInputImageKey)
-            
-            if let filteredImage = filter.outputImage {
-                ciImage = filteredImage
-            }
-        }
+//        if let filterName = filterManager.currentFilter, let filter = CIFilter(name: filterName) {
+//            filter.setValue(ciImage, forKey: kCIInputImageKey)
+//            
+//            if let filteredImage = filter.outputImage {
+//                ciImage = filteredImage
+//            }
+//        }
         
         return ciImage
     }
