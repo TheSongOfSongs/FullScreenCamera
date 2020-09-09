@@ -2,16 +2,27 @@ import UIKit
 import AVFoundation
 import Photos
 import CoreImage
+import GPUImage
 
 class CameraViewController: UIViewController {
+    
+    var camera: Camera!
     
     let cameraManager = CameraManager()
     
     let filterManager = FilterManager.shared
     
+//    private lazy var filterView: UIView = {
+//        let monitorViewSize = self.monitorView.frame.size
+//        let frame = CGRect(x: 0, y: self.view.frame.height - 150, width: monitorViewSize.width, height: 150)
+//
+//        let filterView = FilterCollection(frame: frame)
+//        return filterView
+//    }()
+    
     private lazy var filterView: UIView = {
-        let monitorViewSize = self.monitorView.frame.size
-        let frame = CGRect(x: 0, y: self.view.frame.height - 150, width: monitorViewSize.width, height: 150)
+        let renderViewSize = self.renderView.frame.size
+        let frame = CGRect(x: 0, y: self.view.frame.height - 150, width: self.view.frame.size.width, height: 130)
         
         let filterView = FilterCollection(frame: frame)
         return filterView
@@ -56,7 +67,7 @@ class CameraViewController: UIViewController {
     @IBOutlet weak var switchButton: UIButton!
     @IBOutlet weak var recentPhoto: UIButton!
     @IBOutlet weak var cameraToggle: UIButton!
-    @IBOutlet weak var monitorView: UIImageView!
+    @IBOutlet weak var renderView: RenderView!
     
     override var prefersStatusBarHidden: Bool {
         return true
@@ -73,6 +84,16 @@ class CameraViewController: UIViewController {
                 self.alert(title: "저장 실패", message: "저장할 수 없습니다")
             }
         }
+        
+        do {
+            camera = try Camera(sessionPreset: .high)
+//            camera.runBenchmark = true
+            camera --> renderView
+            camera.startCapture()
+            
+        } catch {
+            fatalError("Could not initialize rendering pipeline: \(error)")
+        }
     }
     
     func setupUI() {
@@ -86,14 +107,6 @@ class CameraViewController: UIViewController {
         
         blurBGView.layer.cornerRadius = blurBGView.bounds.height/2
         blurBGView.layer.masksToBounds = true
-        
-        cameraManager.filterImageCompletion = { image in
-            let uiImage = image.convertToUIImage()
-            
-            DispatchQueue.main.async {
-                self.monitorView.image = uiImage
-            }
-        }
         
         cameraManager.captureButtonCompletion = { isRecording in
             DispatchQueue.main.async {
@@ -164,12 +177,12 @@ class CameraViewController: UIViewController {
     }
     
     func savePhoto() {
-        guard let image = self.monitorView.image else {
-            self.alert(title: "저장 실패", message: "저장할 수 없습니다")
-            return
-        }
-        
-        savePhotoLibrary(image: image)
+//        guard let image = self.renderViewSize.image else {
+//            self.alert(title: "저장 실패", message: "저장할 수 없습니다")
+//            return
+//        }
+//
+//        savePhotoLibrary(image: image)
     }
     
     

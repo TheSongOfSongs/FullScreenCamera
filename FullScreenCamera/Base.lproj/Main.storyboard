@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097.2" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097.3" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="16087"/>
@@ -71,16 +71,6 @@
                                     <action selector="showPhoto:" destination="BYZ-38-t0r" eventType="touchUpInside" id="0vP-cU-51G"/>
                                 </connections>
                             </button>
-                            <imageView clipsSubviews="YES" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="7C5-UF-rvc">
-                                <rect key="frame" x="0.0" y="129" width="414" height="414"/>
-                                <gestureRecognizers/>
-                                <constraints>
-                                    <constraint firstAttribute="width" secondItem="7C5-UF-rvc" secondAttribute="height" multiplier="1:1" id="1Fv-fg-Mke"/>
-                                </constraints>
-                                <connections>
-                                    <outletCollection property="gestureRecognizers" destination="C08-Lh-33o" appends="YES" id="P5K-Ae-e4u"/>
-                                </connections>
-                            </imageView>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="y8C-bq-ZCl">
                                 <rect key="frame" x="297" y="59" width="97" height="50"/>
                                 <subviews>
@@ -113,18 +103,25 @@
                                     <action selector="showFilter:" destination="BYZ-38-t0r" eventType="touchUpInside" id="nuK-bd-1Dk"/>
                                 </connections>
                             </button>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="8Fp-op-QPY" customClass="RenderView" customModule="GPUImage">
+                                <rect key="frame" x="80.5" y="109" width="253" height="450"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="8Fp-op-QPY" secondAttribute="height" multiplier="9:16" id="aq7-wU-pjb"/>
+                                    <constraint firstAttribute="height" constant="450" id="yxz-0j-KU7"/>
+                                </constraints>
+                            </view>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="X43-wj-CMs" secondAttribute="trailing" constant="72" id="0Pa-3v-t75"/>
+                            <constraint firstItem="8Fp-op-QPY" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="96i-lV-5UW"/>
                             <constraint firstItem="y8C-bq-ZCl" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="15" id="9eU-sB-aO5"/>
-                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="7C5-UF-rvc" secondAttribute="trailing" id="CB4-PH-879"/>
-                            <constraint firstItem="7C5-UF-rvc" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="Jce-lA-ywQ"/>
                             <constraint firstItem="Fq0-G4-uzk" firstAttribute="leading" secondItem="n4y-a1-qz8" secondAttribute="trailing" constant="18.5" id="LDL-Aa-0A9"/>
                             <constraint firstItem="qhu-e1-fRb" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="UhP-za-DRE"/>
                             <constraint firstItem="Fq0-G4-uzk" firstAttribute="centerY" secondItem="qhu-e1-fRb" secondAttribute="centerY" id="Vt9-Yu-iR7"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="y8C-bq-ZCl" secondAttribute="trailing" constant="20" id="ZjB-Og-uAH"/>
-                            <constraint firstItem="7C5-UF-rvc" firstAttribute="top" secondItem="m9y-QQ-dg0" secondAttribute="bottom" constant="20" id="bpe-Od-QDq"/>
+                            <constraint firstItem="8Fp-op-QPY" firstAttribute="top" secondItem="m9y-QQ-dg0" secondAttribute="bottom" id="atx-fj-CjS"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="X43-wj-CMs" secondAttribute="bottom" constant="58" id="eBA-qe-dS4"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="qhu-e1-fRb" secondAttribute="bottom" constant="40" id="mrd-1f-Qxa"/>
                             <constraint firstItem="Imq-Qc-6Jt" firstAttribute="height" secondItem="qhu-e1-fRb" secondAttribute="height" constant="20" id="noX-mS-orT"/>
@@ -140,8 +137,8 @@
                         <outlet property="blurBGView" destination="Imq-Qc-6Jt" id="K6d-BA-WDu"/>
                         <outlet property="cameraToggle" destination="Fq0-G4-uzk" id="3lb-FJ-itM"/>
                         <outlet property="captureButton" destination="qhu-e1-fRb" id="hiq-Ny-bxV"/>
-                        <outlet property="monitorView" destination="7C5-UF-rvc" id="GXI-dG-FUa"/>
                         <outlet property="recentPhoto" destination="n4y-a1-qz8" id="TJP-Hx-sKN"/>
+                        <outlet property="renderView" destination="8Fp-op-QPY" id="2hq-K1-Xck"/>
                         <outlet property="switchButton" destination="m9y-QQ-dg0" id="6FN-nO-3LP"/>
                         <outlet property="switchCameraRecorder" destination="m9y-QQ-dg0" id="Knb-J5-mEl"/>
                     </connections>

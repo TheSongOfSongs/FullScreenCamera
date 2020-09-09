@@ -10,8 +10,10 @@ import UIKit
 import CoreImage
 import AVFoundation
 import Photos
+import GPUImage
 
 class CameraManager: NSObject {
+    
     
     var videoDeviceDiscoverySession: AVCaptureDevice.DiscoverySession?
     
@@ -65,14 +67,15 @@ class CameraManager: NSObject {
     
     override init() {
         super.init()
-        
+
         videoDeviceDiscoverySession = .init(deviceTypes:  [.builtInDualCamera, .builtInWideAngleCamera, .builtInTrueDepthCamera],
                                             mediaType: .video,
                                             position: .unspecified)
-        
+
         setupSession()
         startSession()
     }
+    
     
     func toggleCameraRecorderStatus() {
         isCamera.toggle()
