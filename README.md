@@ -23,12 +23,13 @@ Custom Camera를 구현하여 사진과 비디오를 촬영하고, 필터를 사
 ## 화면 예시
 <div>
   <img width="200" src = "https://user-images.githubusercontent.com/46002818/95294991-35379200-08b1-11eb-8b32-057de0ea3dd0.JPG"></img>
-	<img width="200" src = "https://user-images.githubusercontent.com/46002818/95294989-35379200-08b1-11eb-9007-af3c3d6cce14.JPG"></img>
-	</div>
+  <img width="200" src = "https://user-images.githubusercontent.com/46002818/95294989-35379200-08b1-11eb-9007-af3c3d6cce14.JPG"></img>
+</div>
+<div>
 	<img width="160" src="https://user-images.githubusercontent.com/46002818/95295214-9bbcb000-08b1-11eb-999e-d9f0d3ab2300.jpeg"></img>
 	<img width="160" src="https://user-images.githubusercontent.com/46002818/95294975-2e108400-08b1-11eb-9b4b-74f35287a2b2.PNG"></img>
 	<img width="160" src="https://user-images.githubusercontent.com/46002818/95294987-34066500-08b1-11eb-974f-7dad57814ee9.PNG"></img>
-	
+	</div>
 
 ## 앞으로 개발 해야 할 사항
 1. 동영상 화질 개선
